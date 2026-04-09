@@ -82,65 +82,18 @@ interval = "2h"
 
 Each activity has its own independent timer via `interval`.
 
-## Setup presets
+## Setup examples
 
-When helping the user set up, suggest these:
+When asking the user what activities they want, give concrete examples they can pick from or customize:
 
-**Desk Athlete** - movement focused
-```toml
-[[activities]]
-name = "pushups"
-reps = 20
-interval = "1h"
+- 20 pushups every 1h
+- 20 squats every 2h
+- Drink water every 30m
+- 2min stretch every 2h
+- Eye break every 20m (look at something far away for 20s)
+- Stand up every 45m
 
-[[activities]]
-name = "squats"
-reps = 20
-interval = "2h"
-
-[[activities]]
-name = "stretch"
-duration = "2m"
-interval = "2h"
-
-[[activities]]
-name = "water"
-message = "Drink a glass of water"
-interval = "30m"
-```
-
-**Hydration** - minimal
-```toml
-[[activities]]
-name = "water"
-message = "Drink a glass of water"
-interval = "30m"
-```
-
-**Balanced** - movement + wellness
-```toml
-[[activities]]
-name = "pushups"
-reps = 15
-interval = "1h"
-
-[[activities]]
-name = "stretch"
-duration = "2m"
-interval = "2h"
-
-[[activities]]
-name = "water"
-message = "Drink a glass of water"
-interval = "30m"
-
-[[activities]]
-name = "eye break"
-message = "Look at something 20 feet away for 20 seconds"
-interval = "20m"
-```
-
-Adapt reps and intervals to the user's comfort level. A beginner might want 10 pushups, not 20.
+Let them pick whichever ones they want and adjust the reps/intervals. Don't use preset names - just list the options plainly.
 
 ## Stats
 
