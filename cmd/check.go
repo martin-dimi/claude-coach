@@ -94,18 +94,25 @@ func buildReminderContext(due []config.Activity) string {
 	}
 
 	if stats := todayStats(); len(stats) > 0 {
-		b.WriteString("\nToday:")
+		var parts []string
 		for _, s := range stats {
 			if s.TotalReps > 0 {
-				fmt.Fprintf(&b, " %d %s,", s.TotalReps, s.Activity)
+				parts = append(parts, fmt.Sprintf("%d %s", s.TotalReps, s.Activity))
 			} else if s.DoneCount > 0 {
-				fmt.Fprintf(&b, " %dx %s,", s.DoneCount, s.Activity)
+				parts = append(parts, fmt.Sprintf("%dx %s", s.DoneCount, s.Activity))
 			}
+		}
+		if len(parts) > 0 {
+			fmt.Fprintf(&b, "\nToday: %s", strings.Join(parts, ", "))
 		}
 	}
 
 	if streak, _, _ := db.CurrentStreak(); streak > 0 {
-		fmt.Fprintf(&b, "\nStreak: %d days", streak)
+		if streak == 1 {
+			b.WriteString("\nStreak: 1 day")
+		} else {
+			fmt.Fprintf(&b, "\nStreak: %d days", streak)
+		}
 	}
 
 	b.WriteString("\nLog with: coach done <activity> --json | Skip with: coach skip <activity> --json")
