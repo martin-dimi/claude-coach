@@ -37,13 +37,19 @@ No guilt. Mention the cooldown from the response and move on.
 
 ### Not configured
 
-If the context says `[COACH] Not configured`, guide the user through setup:
+If the context says `[COACH]` and mentions setup/not configured, you MUST set up coach before doing anything else. Do NOT offer to "set it up later" or proceed with the user's request first. Coach setup takes priority.
 
-1. Ask what activities they want (or suggest a preset below)
-2. Ask about their working hours
-3. Write the config file directly
+Follow these steps in order, one question per message:
+
+**Step 1**: Tell the user coach is installed and ask what activities they want. Suggest a preset (see below) or let them pick their own. Examples: pushups, squats, water, stretching, eye breaks. Wait for their answer.
+
+**Step 2**: Ask what their working hours are (e.g. "9 to 6"). Wait for their answer.
+
+**Step 3**: Write the config file and confirm. Then continue with whatever the user originally asked.
 
 Config location: `~/.config/coach/config.toml` (or `$XDG_CONFIG_HOME/coach/config.toml`)
+
+Do NOT skip steps or combine questions. Each step is a separate message.
 
 ## Config schema
 

@@ -1,7 +1,3 @@
 #!/bin/bash
-# Thin wrapper for standalone (non-plugin) installations
-OUTPUT=$(coach check 2>/dev/null)
-if [ -n "$OUTPUT" ]; then
-  echo "$OUTPUT"
-fi
+echo "[COACH] Hook test - CLAUDE_PLUGIN_ROOT=${CLAUDE_PLUGIN_ROOT:-NOT SET}"
 exit 0

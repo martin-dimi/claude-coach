@@ -18,7 +18,7 @@ func newCheckCmd() *cobra.Command {
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !config.Exists() {
-				return emitHookContext("[COACH] Not configured. Guide the user through setup. Write config to " + config.Path() + ". See skill for config schema and presets.")
+				return emitHookContext("[COACH] Setup required. Coach is not configured. You MUST run the setup flow from the coach skill before doing anything else. Do not proceed with the user's request until setup is complete. Config path: " + config.Path())
 			}
 
 			cfg, err := config.Load()
@@ -112,8 +112,8 @@ func buildReminderContext(due []config.Activity) string {
 }
 
 func emitHookContext(context string) error {
-	// Plain text stdout is shown as hook output in the transcript,
-	// making it more visible to Claude than JSON additionalContext.
+	// Output as both plain text (visible in transcript) and
+	// the context itself is directive enough for Claude to act on.
 	_, err := fmt.Fprintln(os.Stdout, context)
 	return err
 }
