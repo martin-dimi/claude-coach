@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupTestDB(t *testing.T) {
@@ -15,41 +17,29 @@ func setupTestDB(t *testing.T) {
 }
 
 func TestLogAndLastTime(t *testing.T) {
-	setupTestDB(t)
+	t.Run("no records returns zero time", func(t *testing.T) {
+		setupTestDB(t)
+		last, err := LastTime("pushups", "done")
+		require.NoError(t, err)
+		require.True(t, last.IsZero())
+	})
 
-	// No records yet
-	last, err := LastTime("pushups", "done")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !last.IsZero() {
-		t.Fatalf("expected zero time, got %v", last)
-	}
+	t.Run("returns time after logging", func(t *testing.T) {
+		setupTestDB(t)
+		require.NoError(t, LogActivity("pushups", 20, "", "done"))
+		last, err := LastTime("pushups", "done")
+		require.NoError(t, err)
+		require.False(t, last.IsZero())
+		require.WithinDuration(t, time.Now(), last, 5*time.Second)
+	})
 
-	// Log an activity
-	if err := LogActivity("pushups", 20, "", "done"); err != nil {
-		t.Fatal(err)
-	}
-
-	last, err = LastTime("pushups", "done")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if last.IsZero() {
-		t.Fatal("expected non-zero time after logging")
-	}
-	if time.Since(last) > 5*time.Second {
-		t.Fatalf("last time too old: %v", last)
-	}
-
-	// Different activity should still be zero
-	last, err = LastTime("water", "done")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !last.IsZero() {
-		t.Fatalf("expected zero time for water, got %v", last)
-	}
+	t.Run("different activity is still zero", func(t *testing.T) {
+		setupTestDB(t)
+		LogActivity("pushups", 20, "", "done")
+		last, err := LastTime("water", "done")
+		require.NoError(t, err)
+		require.True(t, last.IsZero())
+	})
 }
 
 func TestLastTimeSeparatesActions(t *testing.T) {
@@ -61,9 +51,8 @@ func TestLastTimeSeparatesActions(t *testing.T) {
 	lastDone, _ := LastTime("pushups", "done")
 	lastSkip, _ := LastTime("pushups", "skip")
 
-	if lastDone.IsZero() || lastSkip.IsZero() {
-		t.Fatal("both done and skip should have times")
-	}
+	require.False(t, lastDone.IsZero())
+	require.False(t, lastSkip.IsZero())
 }
 
 func TestStats(t *testing.T) {
@@ -76,64 +65,37 @@ func TestStats(t *testing.T) {
 
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	stats, err := Stats(startOfDay, now)
-	if err != nil {
-		t.Fatal(err)
-	}
+	stats, err := Stats(startOfDay, now.Add(1*time.Second))
+	require.NoError(t, err)
+	require.Len(t, stats, 2)
 
-	if len(stats) != 2 {
-		t.Fatalf("expected 2 activities, got %d", len(stats))
-	}
-
-	// Stats are ordered by activity name
 	pushups := stats[0]
-	if pushups.Activity != "pushups" {
-		t.Fatalf("expected pushups, got %s", pushups.Activity)
-	}
-	if pushups.TotalReps != 40 {
-		t.Fatalf("expected 40 reps, got %d", pushups.TotalReps)
-	}
-	if pushups.DoneCount != 2 {
-		t.Fatalf("expected 2 done, got %d", pushups.DoneCount)
-	}
-	if pushups.SkipCount != 1 {
-		t.Fatalf("expected 1 skip, got %d", pushups.SkipCount)
-	}
+	require.Equal(t, "pushups", pushups.Activity)
+	require.Equal(t, 40, pushups.TotalReps)
+	require.Equal(t, 2, pushups.DoneCount)
+	require.Equal(t, 1, pushups.SkipCount)
 
 	water := stats[1]
-	if water.Activity != "water" {
-		t.Fatalf("expected water, got %s", water.Activity)
-	}
-	if water.DoneCount != 1 {
-		t.Fatalf("expected 1 done for water, got %d", water.DoneCount)
-	}
+	require.Equal(t, "water", water.Activity)
+	require.Equal(t, 1, water.DoneCount)
 }
 
 func TestStatsTimeRange(t *testing.T) {
 	setupTestDB(t)
-
 	LogActivity("pushups", 20, "", "done")
-
 	now := time.Now()
 
-	// Future range should return nothing
-	future := now.Add(1 * time.Hour)
-	stats, err := Stats(future, future.Add(1*time.Hour))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(stats) != 0 {
-		t.Fatalf("expected 0 stats for future range, got %d", len(stats))
-	}
+	t.Run("future range returns empty", func(t *testing.T) {
+		stats, err := Stats(now.Add(1*time.Hour), now.Add(2*time.Hour))
+		require.NoError(t, err)
+		require.Empty(t, stats)
+	})
 
-	// Lifetime (zero to now) should include it
-	stats, err = Stats(time.Time{}, now.Add(1*time.Second))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(stats) != 1 {
-		t.Fatalf("expected 1 stat for lifetime, got %d", len(stats))
-	}
+	t.Run("lifetime includes all", func(t *testing.T) {
+		stats, err := Stats(time.Time{}, now.Add(1*time.Second))
+		require.NoError(t, err)
+		require.Len(t, stats, 1)
+	})
 }
 
 func TestStatsByDay(t *testing.T) {
@@ -146,80 +108,58 @@ func TestStatsByDay(t *testing.T) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	stats, err := StatsByDay(startOfDay, now.Add(1*time.Second))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(stats) != 2 {
-		t.Fatalf("expected 2 day stats, got %d", len(stats))
-	}
+	require.NoError(t, err)
+	require.Len(t, stats, 2)
 
 	today := now.Format("2006-01-02")
 	for _, s := range stats {
-		if s.Date != today {
-			t.Fatalf("expected date %s, got %s", today, s.Date)
-		}
+		require.Equal(t, today, s.Date)
 	}
 }
 
 func TestCurrentStreak(t *testing.T) {
-	setupTestDB(t)
+	t.Run("no data", func(t *testing.T) {
+		setupTestDB(t)
+		current, best, err := CurrentStreak()
+		require.NoError(t, err)
+		require.Equal(t, 0, current)
+		require.Equal(t, 0, best)
+	})
 
-	// No data = no streak
-	current, best, err := CurrentStreak()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if current != 0 || best != 0 {
-		t.Fatalf("expected 0/0 streak, got %d/%d", current, best)
-	}
+	t.Run("today only", func(t *testing.T) {
+		setupTestDB(t)
+		LogActivity("pushups", 20, "", "done")
+		current, _, err := CurrentStreak()
+		require.NoError(t, err)
+		require.Equal(t, 1, current)
+	})
 
-	// Log today
-	LogActivity("pushups", 20, "", "done")
-	current, _, err = CurrentStreak()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if current != 1 {
-		t.Fatalf("expected 1 day streak, got %d", current)
-	}
+	t.Run("consecutive days", func(t *testing.T) {
+		setupTestDB(t)
+		db, _ := Open()
+		today := time.Now().Format("2006-01-02 15:04:05")
+		yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
+		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", today)
+		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", yesterday)
 
-	// Insert a record for yesterday manually
-	db, _ := Open()
-	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
-	db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", yesterday)
+		current, best, err := CurrentStreak()
+		require.NoError(t, err)
+		require.Equal(t, 2, current)
+		require.GreaterOrEqual(t, best, 2)
+	})
 
-	current, best, err = CurrentStreak()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if current != 2 {
-		t.Fatalf("expected 2 day streak, got %d", current)
-	}
-	if best < 2 {
-		t.Fatalf("expected best >= 2, got %d", best)
-	}
-}
+	t.Run("gap breaks streak", func(t *testing.T) {
+		setupTestDB(t)
+		db, _ := Open()
+		today := time.Now().Format("2006-01-02 15:04:05")
+		yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
+		threeDaysAgo := time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05")
+		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", today)
+		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", yesterday)
+		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", threeDaysAgo)
 
-func TestCurrentStreakGap(t *testing.T) {
-	setupTestDB(t)
-
-	db, _ := Open()
-
-	// Insert records with a gap: today, yesterday, 3 days ago (missing 2 days ago)
-	today := time.Now().Format("2006-01-02 15:04:05")
-	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
-	threeDaysAgo := time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05")
-
-	db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", today)
-	db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", yesterday)
-	db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", threeDaysAgo)
-
-	current, best, _ := CurrentStreak()
-	if current != 2 {
-		t.Fatalf("expected current streak 2 (gap at day -2), got %d", current)
-	}
-	if best != 2 {
-		t.Fatalf("expected best streak 2, got %d", best)
-	}
+		current, best, _ := CurrentStreak()
+		require.Equal(t, 2, current)
+		require.Equal(t, 2, best)
+	})
 }

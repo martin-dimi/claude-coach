@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/fridge/coach/internal/config"
@@ -11,144 +12,109 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type checkOutput struct {
-	HookSpecificOutput hookOutput `json:"hookSpecificOutput"`
+type hookJSON struct {
+	HookSpecificOutput struct {
+		HookEventName     string `json:"hookEventName"`
+		AdditionalContext string `json:"additionalContext"`
+	} `json:"hookSpecificOutput"`
 }
 
-type hookOutput struct {
-	HookEventName     string `json:"hookEventName"`
-	AdditionalContext string `json:"additionalContext"`
-}
-
-type checkDueActivity struct {
-	Name     string `json:"name"`
-	Reps     int    `json:"reps,omitempty"`
-	Duration string `json:"duration,omitempty"`
-	Message  string `json:"message,omitempty"`
-}
-
-var checkCmd = &cobra.Command{
-	Use:    "check",
-	Short:  "Check if any activities are due (used by hook)",
-	Hidden: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// No config = guide setup
-		if !config.Exists() {
-			return outputHook("[COACH] Not configured. Guide the user through setup. Write config to " + config.Path() + ". See skill for config schema and presets.")
-		}
-
-		cfg, err := config.Load()
-		if err != nil {
-			return err
-		}
-
-		// Check active hours
-		if !withinActiveHours(cfg.Settings) {
-			return nil
-		}
-
-		// Check each activity
-		var due []checkDueActivity
-		for _, a := range cfg.Activities {
-			lastDone, _ := db.LastTime(a.Name, "done")
-			lastSkip, _ := db.LastTime(a.Name, "skip")
-
-			// Check skip cooldown
-			if !lastSkip.IsZero() {
-				cooldown := cfg.Settings.SkipCooldownDuration()
-				if time.Since(lastSkip) < cooldown {
-					continue
-				}
+func newCheckCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:    "check",
+		Short:  "Check if any activities are due (used by hook)",
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if !config.Exists() {
+				return emitHookContext("[COACH] Not configured. Guide the user through setup. Write config to " + config.Path() + ". See skill for config schema and presets.")
 			}
 
-			// Use the most recent done or skip as the timer reference
-			lastActivity := lastDone
-			if lastSkip.After(lastDone) {
-				lastActivity = lastSkip
+			cfg, err := config.Load()
+			if err != nil {
+				return err
 			}
 
-			// If no log at all, activity is due (first reminder after setup)
-			if lastActivity.IsZero() || time.Since(lastActivity) >= a.IntervalDuration() {
-				da := checkDueActivity{
-					Name:     a.Name,
-					Reps:     a.Reps,
-					Duration: a.Duration,
-					Message:  a.Message,
-				}
-				due = append(due, da)
+			if !withinActiveHours(cfg.Settings) {
+				return nil
 			}
-		}
 
-		if len(due) == 0 {
-			return nil // nothing due, no output
-		}
-
-		// Build context string
-		ctx := "[COACH] Break reminder:\nDue:"
-		for _, d := range due {
-			if d.Message != "" {
-				ctx += fmt.Sprintf(" %s,", d.Message)
-			} else if d.Reps > 0 {
-				ctx += fmt.Sprintf(" %d %s,", d.Reps, d.Name)
-			} else if d.Duration != "" {
-				ctx += fmt.Sprintf(" %s %s,", d.Duration, d.Name)
-			} else {
-				ctx += fmt.Sprintf(" %s,", d.Name)
+			due := dueActivities(cfg)
+			if len(due) == 0 {
+				return nil
 			}
-		}
-		ctx = ctx[:len(ctx)-1] // trim trailing comma
 
-		// Add today stats
-		now := time.Now()
-		startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-		todayStats, _ := db.Stats(startOfDay, now)
-		if len(todayStats) > 0 {
-			ctx += "\nToday:"
-			for _, s := range todayStats {
-				if s.TotalReps > 0 {
-					ctx += fmt.Sprintf(" %d %s,", s.TotalReps, s.Activity)
-				} else if s.DoneCount > 0 {
-					ctx += fmt.Sprintf(" %dx %s,", s.DoneCount, s.Activity)
-				}
-			}
-			ctx = ctx[:len(ctx)-1]
-		}
-
-		// Add streak
-		streak, _, _ := db.CurrentStreak()
-		if streak > 0 {
-			ctx += fmt.Sprintf("\nStreak: %d days", streak)
-		}
-
-		ctx += "\nLog with: coach done <activity> --json | Skip with: coach skip <activity> --json"
-
-		return outputHook(ctx)
-	},
-}
-
-func outputHook(context string) error {
-	out := checkOutput{
-		HookSpecificOutput: hookOutput{
-			HookEventName:     "UserPromptSubmit",
-			AdditionalContext: context,
+			return emitHookContext(buildReminderContext(due))
 		},
 	}
-	return json.NewEncoder(os.Stdout).Encode(out)
 }
 
-func withinActiveHours(s config.Settings) bool {
-	now := time.Now()
-	start, err1 := time.Parse("15:04", s.ActiveHours[0])
-	end, err2 := time.Parse("15:04", s.ActiveHours[1])
-	if err1 != nil || err2 != nil {
-		return true
+func dueActivities(cfg config.Config) []config.Activity {
+	var due []config.Activity
+	for _, a := range cfg.Activities {
+		if isActivityDue(a, cfg.Settings) {
+			due = append(due, a)
+		}
 	}
-	nowMin := now.Hour()*60 + now.Minute()
-	startMin := start.Hour()*60 + start.Minute()
-	endMin := end.Hour()*60 + end.Minute()
-	return nowMin >= startMin && nowMin <= endMin
+	return due
 }
 
-func init() {
-	rootCmd.AddCommand(checkCmd)
+func isActivityDue(a config.Activity, s config.Settings) bool {
+	lastDone, _ := db.LastTime(a.Name, "done")
+	lastSkip, _ := db.LastTime(a.Name, "skip")
+
+	if !lastSkip.IsZero() && time.Since(lastSkip) < s.SkipCooldownDuration() {
+		return false
+	}
+
+	last := lastDone
+	if lastSkip.After(lastDone) {
+		last = lastSkip
+	}
+
+	return last.IsZero() || time.Since(last) >= a.IntervalDuration()
+}
+
+func buildReminderContext(due []config.Activity) string {
+	var b strings.Builder
+	b.WriteString("[COACH] Break reminder:\nDue:")
+	for i, a := range due {
+		if i > 0 {
+			b.WriteString(",")
+		}
+		switch {
+		case a.Message != "":
+			fmt.Fprintf(&b, " %s", a.Message)
+		case a.Reps > 0:
+			fmt.Fprintf(&b, " %d %s", a.Reps, a.Name)
+		case a.Duration != "":
+			fmt.Fprintf(&b, " %s %s", a.Duration, a.Name)
+		default:
+			fmt.Fprintf(&b, " %s", a.Name)
+		}
+	}
+
+	if stats := todayStats(); len(stats) > 0 {
+		b.WriteString("\nToday:")
+		for _, s := range stats {
+			if s.TotalReps > 0 {
+				fmt.Fprintf(&b, " %d %s,", s.TotalReps, s.Activity)
+			} else if s.DoneCount > 0 {
+				fmt.Fprintf(&b, " %dx %s,", s.DoneCount, s.Activity)
+			}
+		}
+	}
+
+	if streak, _, _ := db.CurrentStreak(); streak > 0 {
+		fmt.Fprintf(&b, "\nStreak: %d days", streak)
+	}
+
+	b.WriteString("\nLog with: coach done <activity> --json | Skip with: coach skip <activity> --json")
+	return b.String()
+}
+
+func emitHookContext(context string) error {
+	out := hookJSON{}
+	out.HookSpecificOutput.HookEventName = "UserPromptSubmit"
+	out.HookSpecificOutput.AdditionalContext = context
+	return json.NewEncoder(os.Stdout).Encode(out)
 }

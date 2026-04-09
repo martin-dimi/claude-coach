@@ -10,81 +10,78 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type statsJSON struct {
+type StatsResult struct {
 	Today    []db.ActivityStat `json:"today"`
+	Lifetime []db.ActivityStat `json:"lifetime"`
 	Streak   int               `json:"streak"`
 	Best     int               `json:"best"`
-	Lifetime []db.ActivityStat `json:"lifetime"`
 }
 
-var statsCmd = &cobra.Command{
-	Use:   "stats",
-	Short: "Show your stats",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		now := time.Now()
-		startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-
-		todayStats, err := db.Stats(startOfDay, now)
-		if err != nil {
-			return err
-		}
-
-		lifetimeStats, err := db.Stats(time.Time{}, now)
-		if err != nil {
-			return err
-		}
-
-		streak, best, err := db.CurrentStreak()
-		if err != nil {
-			return err
-		}
-
-		if jsonFlag {
-			return json.NewEncoder(os.Stdout).Encode(statsJSON{
-				Today:    todayStats,
-				Streak:   streak,
-				Best:     best,
-				Lifetime: lifetimeStats,
-			})
-		}
-
-		// Human mode - contribution grids will be added in Phase 5
-		fmt.Println()
-
-		if len(todayStats) == 0 {
-			fmt.Println("  Nothing yet. Get going!")
-		} else {
-			fmt.Println("  Today")
-			for _, s := range todayStats {
-				if s.TotalReps > 0 {
-					fmt.Printf("    %d %s\n", s.TotalReps, s.Activity)
-				} else if s.DoneCount > 0 {
-					fmt.Printf("    %dx %s\n", s.DoneCount, s.Activity)
-				}
+func newStatsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "stats",
+		Short: "Show your stats",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			result, err := getStats()
+			if err != nil {
+				return err
 			}
-		}
-
-		fmt.Println()
-
-		if len(lifetimeStats) > 0 {
-			fmt.Println("  All Time")
-			for _, s := range lifetimeStats {
-				if s.TotalReps > 0 {
-					fmt.Printf("    %d %s\n", s.TotalReps, s.Activity)
-				} else if s.DoneCount > 0 {
-					fmt.Printf("    %dx %s\n", s.DoneCount, s.Activity)
-				}
+			if jsonFlag {
+				return json.NewEncoder(os.Stdout).Encode(result)
 			}
-		}
-
-		fmt.Println()
-		fmt.Printf("  %d day streak · best: %d days\n", streak, best)
-		fmt.Println()
-
-		return nil
-	},
+			renderStatsHuman(result)
+			return nil
+		},
+	}
 }
 
-func init() {
-	rootCmd.AddCommand(statsCmd)
+func getStats() (StatsResult, error) {
+	now := time.Now().UTC().Add(1 * time.Second)
+
+	today, err := db.Stats(startOfDayUTC(), now)
+	if err != nil {
+		return StatsResult{}, err
+	}
+
+	lifetime, err := db.Stats(time.Time{}, now)
+	if err != nil {
+		return StatsResult{}, err
+	}
+
+	streak, best, err := db.CurrentStreak()
+	if err != nil {
+		return StatsResult{}, err
+	}
+
+	return StatsResult{Today: today, Lifetime: lifetime, Streak: streak, Best: best}, nil
+}
+
+func renderStatsHuman(r StatsResult) {
+	fmt.Println()
+	if len(r.Today) == 0 {
+		fmt.Println("  Nothing yet. Get going!")
+	} else {
+		fmt.Println("  Today")
+		for _, s := range r.Today {
+			if s.TotalReps > 0 {
+				fmt.Printf("    %d %s\n", s.TotalReps, s.Activity)
+			} else if s.DoneCount > 0 {
+				fmt.Printf("    %dx %s\n", s.DoneCount, s.Activity)
+			}
+		}
+	}
+	fmt.Println()
+	if len(r.Lifetime) > 0 {
+		fmt.Println("  All Time")
+		for _, s := range r.Lifetime {
+			if s.TotalReps > 0 {
+				fmt.Printf("    %d %s\n", s.TotalReps, s.Activity)
+			} else if s.DoneCount > 0 {
+				fmt.Printf("    %dx %s\n", s.DoneCount, s.Activity)
+			}
+		}
+	}
+	fmt.Println()
+	fmt.Printf("  %d day streak · best: %d days\n", r.Streak, r.Best)
+	fmt.Println()
 }

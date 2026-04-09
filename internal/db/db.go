@@ -20,6 +20,15 @@ func dbPath() string {
 	return filepath.Join(home, ".config", "coach", "coach.db")
 }
 
+// Reset closes the connection so the next Open() creates a fresh one.
+// Used by tests.
+func Reset() {
+	if conn != nil {
+		conn.Close()
+		conn = nil
+	}
+}
+
 func Open() (*sql.DB, error) {
 	if conn != nil {
 		return conn, nil
@@ -47,7 +56,7 @@ func migrate(db *sql.DB) error {
 			reps INTEGER NOT NULL DEFAULT 0,
 			duration TEXT NOT NULL DEFAULT '',
 			action TEXT NOT NULL,
-			created_at DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+			created_at DATETIME NOT NULL DEFAULT (datetime('now'))
 		)
 	`)
 	return err
@@ -81,9 +90,8 @@ func LastTime(activity, action string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	// SQLite may return different formats depending on context
 	for _, layout := range []string{"2006-01-02 15:04:05", time.RFC3339, "2006-01-02T15:04:05Z"} {
-		if t, err := time.ParseInLocation(layout, ts, time.Now().Location()); err == nil {
+		if t, err := time.Parse(layout, ts); err == nil {
 			return t, nil
 		}
 	}
@@ -91,10 +99,10 @@ func LastTime(activity, action string) (time.Time, error) {
 }
 
 type ActivityStat struct {
-	Activity   string
-	TotalReps  int
-	DoneCount  int
-	SkipCount  int
+	Activity  string `json:"activity"`
+	TotalReps int    `json:"total_reps"`
+	DoneCount int    `json:"done_count"`
+	SkipCount int    `json:"skip_count"`
 }
 
 func Stats(from, to time.Time) ([]ActivityStat, error) {
@@ -111,7 +119,7 @@ func Stats(from, to time.Time) ([]ActivityStat, error) {
 		WHERE created_at >= ? AND created_at <= ?
 		GROUP BY activity
 		ORDER BY activity
-	`, from.Format("2006-01-02 15:04:05"), to.Format("2006-01-02 15:04:05"))
+	`, from.UTC().Format("2006-01-02 15:04:05"), to.UTC().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +156,7 @@ func StatsByDay(from, to time.Time) ([]DayStat, error) {
 		WHERE created_at >= ? AND created_at <= ?
 		GROUP BY day, activity
 		ORDER BY day, activity
-	`, from.Format("2006-01-02 15:04:05"), to.Format("2006-01-02 15:04:05"))
+	`, from.UTC().Format("2006-01-02 15:04:05"), to.UTC().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return nil, err
 	}
