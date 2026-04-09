@@ -21,6 +21,7 @@ homebrew_casks:
     repository:
       owner: martin-dimi
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/martin-dimi/claude-coach
     description: Your personal wellness coach inside Claude Code
 
