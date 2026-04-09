@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fridge/coach/internal/config"
+	"github.com/martin-dimi/claude-coach/internal/config"
 	"github.com/spf13/cobra"
 )
 

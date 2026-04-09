@@ -18,7 +18,7 @@ Setup, stats and config changes all happen through conversation with Claude.
 
 ```bash
 # 1. Install the binary
-brew install fridge/tap/coach
+brew install martin-dimi/tap/coach
 
 # 2. Load the plugin
 claude --plugin-dir /path/to/coach

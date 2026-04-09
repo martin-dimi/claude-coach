@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/fridge/coach/internal/db"
+	"github.com/martin-dimi/claude-coach/internal/db"
 )
 
 // Activity colors - 3 intensity levels (low, medium, high)

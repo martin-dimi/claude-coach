@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fridge/coach/internal/config"
-	"github.com/fridge/coach/internal/db"
+	"github.com/martin-dimi/claude-coach/internal/config"
+	"github.com/martin-dimi/claude-coach/internal/db"
 )
 
 func setupTest(t *testing.T) {

@@ -18,10 +18,10 @@ archives:
 
 brews:
   - repository:
-      owner: fridge
+      owner: martin-dimi
       name: homebrew-tap
     name: coach
-    homepage: https://github.com/fridge/coach
+    homepage: https://github.com/martin-dimi/claude-coach
     description: Your personal wellness coach inside Claude Code
     license: MIT
     install: |

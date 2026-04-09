@@ -1,4 +1,4 @@
-module github.com/fridge/coach
+module github.com/martin-dimi/claude-coach
 
 go 1.25.0
 

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fridge/coach/internal/config"
-	"github.com/fridge/coach/internal/db"
+	"github.com/martin-dimi/claude-coach/internal/config"
+	"github.com/martin-dimi/claude-coach/internal/db"
 	"github.com/spf13/cobra"
 )
 

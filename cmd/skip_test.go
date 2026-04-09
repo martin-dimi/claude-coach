@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/fridge/coach/internal/config"
+	"github.com/martin-dimi/claude-coach/internal/config"
 	"github.com/stretchr/testify/require"
 )
 

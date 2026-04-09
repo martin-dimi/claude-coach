@@ -202,8 +202,8 @@ func CurrentStreak() (current int, best int, err error) {
 		return 0, 0, nil
 	}
 
-	// Current streak: walk backwards from today
-	today := time.Now().Format("2006-01-02")
+	// Current streak: walk backwards from today (UTC to match DB)
+	today := time.Now().UTC().Format("2006-01-02")
 	expected := today
 	for _, d := range dates {
 		if d == expected {

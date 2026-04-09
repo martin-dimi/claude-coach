@@ -30,7 +30,7 @@ func TestLogAndLastTime(t *testing.T) {
 		last, err := LastTime("pushups", "done")
 		require.NoError(t, err)
 		require.False(t, last.IsZero())
-		require.WithinDuration(t, time.Now(), last, 5*time.Second)
+		require.WithinDuration(t, time.Now().UTC(), last, 5*time.Second)
 	})
 
 	t.Run("different activity is still zero", func(t *testing.T) {
@@ -63,8 +63,8 @@ func TestStats(t *testing.T) {
 	LogActivity("pushups", 0, "", "skip")
 	LogActivity("water", 0, "", "done")
 
-	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	now := time.Now().UTC()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	stats, err := Stats(startOfDay, now.Add(1*time.Second))
 	require.NoError(t, err)
 	require.Len(t, stats, 2)
@@ -83,7 +83,7 @@ func TestStats(t *testing.T) {
 func TestStatsTimeRange(t *testing.T) {
 	setupTestDB(t)
 	LogActivity("pushups", 20, "", "done")
-	now := time.Now()
+	now := time.Now().UTC()
 
 	t.Run("future range returns empty", func(t *testing.T) {
 		stats, err := Stats(now.Add(1*time.Hour), now.Add(2*time.Hour))
@@ -105,8 +105,8 @@ func TestStatsByDay(t *testing.T) {
 	LogActivity("pushups", 20, "", "done")
 	LogActivity("water", 0, "", "done")
 
-	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	now := time.Now().UTC()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	stats, err := StatsByDay(startOfDay, now.Add(1*time.Second))
 	require.NoError(t, err)
 	require.Len(t, stats, 2)
@@ -137,8 +137,8 @@ func TestCurrentStreak(t *testing.T) {
 	t.Run("consecutive days", func(t *testing.T) {
 		setupTestDB(t)
 		db, _ := Open()
-		today := time.Now().Format("2006-01-02 15:04:05")
-		yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
+		today := time.Now().UTC().Format("2006-01-02 15:04:05")
+		yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
 		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", today)
 		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", yesterday)
 
@@ -151,9 +151,9 @@ func TestCurrentStreak(t *testing.T) {
 	t.Run("gap breaks streak", func(t *testing.T) {
 		setupTestDB(t)
 		db, _ := Open()
-		today := time.Now().Format("2006-01-02 15:04:05")
-		yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
-		threeDaysAgo := time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05")
+		today := time.Now().UTC().Format("2006-01-02 15:04:05")
+		yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
+		threeDaysAgo := time.Now().UTC().AddDate(0, 0, -3).Format("2006-01-02 15:04:05")
 		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", today)
 		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", yesterday)
 		db.Exec("INSERT INTO activity_log (activity, reps, action, created_at) VALUES ('pushups', 20, 'done', ?)", threeDaysAgo)
