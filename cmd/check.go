@@ -86,16 +86,22 @@ func buildReminderContext(due []config.Activity) string {
 	}
 
 	if stats := todayStats(); len(stats) > 0 {
-		var parts []string
+		var doneParts, skipParts []string
 		for _, s := range stats {
 			if s.TotalReps > 0 {
-				parts = append(parts, fmt.Sprintf("%d %s", s.TotalReps, s.Activity))
+				doneParts = append(doneParts, fmt.Sprintf("%d %s", s.TotalReps, s.Activity))
 			} else if s.DoneCount > 0 {
-				parts = append(parts, fmt.Sprintf("%dx %s", s.DoneCount, s.Activity))
+				doneParts = append(doneParts, fmt.Sprintf("%dx %s", s.DoneCount, s.Activity))
+			}
+			if s.SkipCount > 0 {
+				skipParts = append(skipParts, fmt.Sprintf("%s skipped %dx", s.Activity, s.SkipCount))
 			}
 		}
-		if len(parts) > 0 {
-			fmt.Fprintf(&b, "\nToday: %s", strings.Join(parts, ", "))
+		if len(doneParts) > 0 {
+			fmt.Fprintf(&b, "\nToday: %s", strings.Join(doneParts, ", "))
+		}
+		if len(skipParts) > 0 {
+			fmt.Fprintf(&b, "\nSkips: %s", strings.Join(skipParts, ", "))
 		}
 	}
 

@@ -45,7 +45,9 @@ If they say "skip":
 coach skip <activity> --json
 ```
 
-No guilt, tho you can say something like "Ahh, ok no problem. You'll do them next time". Mention the cooldown, how many times they've skipped and continue with their request.
+No guilt, tho you can say something like "Ahh, ok no problem. You'll do them next time". Mention the cooldown and continue with their request.
+
+Use common sense based on the stats. If you notice the user keeps skipping a specific activity (e.g. skipped water 3 times today), gently nudge them: "You've skipped water 3 times today - maybe just a quick sip?" If they consistently skip something over days, suggest adjusting the interval or removing it.
 
 If they try to ignore the reminder and just continue working, remind them again. They must either do it or skip it.
 
