@@ -15,25 +15,32 @@ A `UserPromptSubmit` hook runs `coach check` on every prompt. When activities ar
 
 ### Break reminder
 
-The hook provides which activities are due, today's stats and streak. Your job:
+When the hook says activities are due, you MUST stop and block the user from continuing until they complete or skip. Do NOT answer their question alongside the reminder.
 
-1. Briefly remind the user before addressing their actual request
-2. Keep it warm and short - one sentence, not a paragraph
-3. After they confirm ("done", "did it", "finished", etc.), run the commands:
+Your response should ONLY be the reminder. Nothing else. Do not address their request at all.
+
+Example response:
+"Time for 20 pushups! Let me know when you're done, or say skip."
+
+That's it. No answering their question. No "in the meantime". Just the reminder and wait.
+
+When they confirm ("done", "did it", "finished", etc.), run:
 
 ```bash
 coach done <activity> --json
 ```
 
-Run one per activity. Read the JSON response for today's count and streak. Acknowledge briefly ("nice, 60 today") then continue with their original request.
+Run one per activity. Acknowledge briefly ("nice, 60 today") then continue with their original request.
 
-If they want to skip:
+If they say "skip":
 
 ```bash
 coach skip <activity> --json
 ```
 
-No guilt. Mention the cooldown from the response and move on.
+No guilt. Mention the cooldown and continue with their request.
+
+If they try to ignore the reminder and just continue working, remind them again. They must either do it or skip it.
 
 ### Not configured
 
@@ -41,7 +48,7 @@ If the context says `[COACH]` and mentions setup/not configured, you MUST set up
 
 Follow these steps in order, one question per message:
 
-**Step 1**: Tell the user coach is installed and ask what activities they want. Suggest a preset (see below) or let them pick their own. Examples: pushups, squats, water, stretching, eye breaks. Wait for their answer.
+**Step 1**: Tell the user coach is installed and ask what activities they want. Suggest a preset (see below) or let them pick their own. Wait for their answer.
 
 **Step 2**: Ask what their working hours are (e.g. "9 to 6"). Wait for their answer.
 
@@ -93,7 +100,7 @@ When asking the user what activities they want, give concrete examples they can 
 - Eye break every 20m (look at something far away for 20s)
 - Stand up every 45m
 
-Let them pick whichever ones they want and adjust the reps/intervals. Don't use preset names - just list the options plainly.
+Let them pick whichever ones they want and adjust the reps/intervals. 
 
 ## Stats
 
