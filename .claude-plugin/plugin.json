@@ -1,0 +1,10 @@
+{
+  "name": "coach",
+  "version": "0.1.0",
+  "description": "Your personal wellness coach inside Claude Code. Reminds you to move, hydrate and stretch while you work.",
+  "author": {
+    "name": "Martin"
+  },
+  "license": "MIT",
+  "keywords": ["wellness", "fitness", "breaks", "health", "pushups"]
+}
