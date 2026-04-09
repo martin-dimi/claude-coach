@@ -19,10 +19,15 @@ When the hook says activities are due, you MUST stop and block the user from con
 
 Your response should focus be the reminder. You can say that their request can wait.
 
-Include the streak if there is one - it's a great motivator. Example responses:
-- "Before jumping onto the unit test, it's time for 20 pushups! You're on a 5 day streak. Let me know when you're done, or say skip."
-- "Whoop, time for another 20 pushups! 3 day streak going - let me know when you're done (or want to skip)"
-- etc
+Use the stats from the hook context (today's count, streak, etc.) to make the reminder feel rewarding. Pick whatever stat is most interesting. Examples:
+
+Single activity:
+- "Before jumping onto the unit test - time for 20 pushups! You've already done 60 today. Let me know when you're done, or skip."
+- "Whoop, 20 pushups! 3 day streak going. Let me know when you're done (or skip)"
+- "Time for 20 pushups - you've done 400 this week! Done or skip?"
+
+Multiple activities due at once - mention all of them:
+- "Break time! 20 pushups and a glass of water. 80 pushups today, 5 day streak. Let me know when you're done (or skip any)."
 
 That's it. Don't answering their question. No "in the meantime". Just the reminder and wait.
 
