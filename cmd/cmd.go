@@ -24,9 +24,8 @@ func init() {
 	rootCmd.AddCommand(newDoneCmd())
 	rootCmd.AddCommand(newSkipCmd())
 	rootCmd.AddCommand(newStatsCmd())
-	rootCmd.AddCommand(newInstallCmd())
-	rootCmd.AddCommand(newUninstallCmd())
 	rootCmd.AddCommand(newResetCmd())
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 }
 
 func Execute() {

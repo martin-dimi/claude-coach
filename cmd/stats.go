@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fridge/coach/internal/db"
+	"github.com/fridge/coach/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -57,31 +58,62 @@ func getStats() (StatsResult, error) {
 }
 
 func renderStatsHuman(r StatsResult) {
+	now := time.Now().UTC()
+	thirtyDaysAgo := now.AddDate(0, 0, -30)
+
+	dayStats, _ := db.StatsByDay(thirtyDaysAgo, now.Add(1*time.Second))
+
+	// Group by activity: activity -> date -> DayStat
+	byActivity := make(map[string]map[string]db.DayStat)
+	var activityOrder []string
+	seen := make(map[string]bool)
+	for _, s := range dayStats {
+		if !seen[s.Activity] {
+			seen[s.Activity] = true
+			activityOrder = append(activityOrder, s.Activity)
+		}
+		if byActivity[s.Activity] == nil {
+			byActivity[s.Activity] = make(map[string]db.DayStat)
+		}
+		byActivity[s.Activity][s.Date] = s
+	}
+
+	// Also include activities from lifetime that might not have 30-day data
+	for _, s := range r.Lifetime {
+		if !seen[s.Activity] {
+			seen[s.Activity] = true
+			activityOrder = append(activityOrder, s.Activity)
+			byActivity[s.Activity] = make(map[string]db.DayStat)
+		}
+	}
+
 	fmt.Println()
-	if len(r.Today) == 0 {
+
+	if len(activityOrder) == 0 {
 		fmt.Println("  Nothing yet. Get going!")
-	} else {
-		fmt.Println("  Today")
-		for _, s := range r.Today {
-			if s.TotalReps > 0 {
-				fmt.Printf("    %d %s\n", s.TotalReps, s.Activity)
-			} else if s.DoneCount > 0 {
-				fmt.Printf("    %dx %s\n", s.DoneCount, s.Activity)
-			}
-		}
+		fmt.Println()
+		return
 	}
-	fmt.Println()
-	if len(r.Lifetime) > 0 {
-		fmt.Println("  All Time")
-		for _, s := range r.Lifetime {
-			if s.TotalReps > 0 {
-				fmt.Printf("    %d %s\n", s.TotalReps, s.Activity)
-			} else if s.DoneCount > 0 {
-				fmt.Printf("    %dx %s\n", s.DoneCount, s.Activity)
-			}
-		}
+
+	// Build today and lifetime lookup
+	todayMap := make(map[string]db.ActivityStat)
+	for _, s := range r.Today {
+		todayMap[s.Activity] = s
 	}
-	fmt.Println()
-	fmt.Printf("  %d day streak · best: %d days\n", r.Streak, r.Best)
+	lifetimeMap := make(map[string]db.ActivityStat)
+	for _, s := range r.Lifetime {
+		lifetimeMap[s.Activity] = s
+	}
+
+	for i, activity := range activityOrder {
+		today := todayMap[activity]
+		lifetime := lifetimeMap[activity]
+
+		grid := ui.RenderGrid(activity, i, byActivity[activity], today.TotalReps, today.DoneCount, lifetime.TotalReps, lifetime.DoneCount)
+		fmt.Println(grid)
+		fmt.Println()
+	}
+
+	fmt.Println(ui.RenderFooter(r.Streak, r.Best))
 	fmt.Println()
 }
