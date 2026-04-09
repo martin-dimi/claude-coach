@@ -113,7 +113,7 @@ func buildReminderContext(due []config.Activity) string {
 		}
 	}
 
-	b.WriteString("\nLog with: coach done <activity> --json | Skip with: coach skip <activity> --json")
+	b.WriteString("\nACTION REQUIRED: Load the coach skill and follow its break reminder instructions before responding to the user.")
 	return b.String()
 }
 

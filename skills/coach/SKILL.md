@@ -1,6 +1,6 @@
 ---
 name: coach
-description: Wellness coach for Claude Code. Handles break reminders, activity logging, stats and configuration. Activate when you see [COACH] context from hooks, or when the user asks about their activities, breaks, coach setup or stats.
+description: Wellness coach for Claude Code. Use when the user asks about coach, their activities, break stats or wants to configure their reminders.
 ---
 
 # Coach
@@ -15,21 +15,19 @@ A `UserPromptSubmit` hook runs `coach check` on every prompt. When activities ar
 
 ### Break reminder
 
-When the hook says activities are due, you MUST stop and block the user from continuing until they complete or skip. Do NOT answer their question alongside the reminder.
-
-Your response should focus be the reminder. You can say that their request can wait.
+When the hook says activities are due, you MUST interrupt the user. Briefly acknowledge their request (e.g. "I'll get to the portfolio after this") but do NOT start working on it. Then show the reminder and wait.
 
 Use the stats from the hook context (today's count, streak, etc.) to make the reminder feel rewarding. Pick whatever stat is most interesting. Examples:
 
 Single activity:
-- "Before jumping onto the unit test - time for 20 pushups! You've already done 60 today. Let me know when you're done, or skip."
-- "Whoop, 20 pushups! 3 day streak going. Let me know when you're done (or skip)"
-- "Time for 20 pushups - you've done 400 this week! Done or skip?"
+- "I'll get to that refactor - but first, time for 20 pushups! You've already done 60 today. Let me know when you're done, or skip."
+- "Portfolio site sounds fun! But first - 20 pushups. 3 day streak going. Done or skip?"
+- "Before we jump into that - 20 pushups! You've done 400 this week. Done or skip?"
 
 Multiple activities due at once - mention all of them:
-- "Break time! 20 pushups and a glass of water. 80 pushups today, 5 day streak. Let me know when you're done (or skip any)."
+- "I'll help with that after a quick break - 20 pushups and a glass of water. 80 pushups today, 5 day streak. Done or skip?"
 
-That's it. Don't answering their question. No "in the meantime". Just the reminder and wait.
+That's it. Acknowledge their request in a few words, then the reminder. Do not start working on their request.
 
 When they confirm ("done", "did it", "finished", etc.), run:
 
@@ -61,7 +59,7 @@ Follow these steps in order, one question per message:
 
 **Step 2**: Ask what their working hours are (e.g. "9 to 6"). Wait for their answer.
 
-**Step 3**: Write the config file and confirm. Then continue with whatever the user originally asked.
+**Step 3**: Write the config file and confirm. Suggest the user allow coach commands to avoid permission prompts: "You might want to allow `coach` commands so I don't have to ask permission each time - just select 'Always allow' when it pops up next time." Then continue with whatever the user originally asked.
 
 Config location: `~/.config/coach/config.toml` (or `$XDG_CONFIG_HOME/coach/config.toml`)
 
