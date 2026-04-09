@@ -17,12 +17,14 @@ A `UserPromptSubmit` hook runs `coach check` on every prompt. When activities ar
 
 When the hook says activities are due, you MUST stop and block the user from continuing until they complete or skip. Do NOT answer their question alongside the reminder.
 
-Your response should ONLY be the reminder. Nothing else. Do not address their request at all.
+Your response should focus be the reminder. You can say that their request can wait.
 
-Example response:
-"Time for 20 pushups! Let me know when you're done, or say skip."
+Include the streak if there is one - it's a great motivator. Example responses:
+- "Before jumping onto the unit test, it's time for 20 pushups! You're on a 5 day streak. Let me know when you're done, or say skip."
+- "Whoop, time for another 20 pushups! 3 day streak going - let me know when you're done (or want to skip)"
+- etc
 
-That's it. No answering their question. No "in the meantime". Just the reminder and wait.
+That's it. Don't answering their question. No "in the meantime". Just the reminder and wait.
 
 When they confirm ("done", "did it", "finished", etc.), run:
 
@@ -38,7 +40,7 @@ If they say "skip":
 coach skip <activity> --json
 ```
 
-No guilt. Mention the cooldown and continue with their request.
+No guilt, tho you can say something like "Ahh, ok no problem. You'll do them next time". Mention the cooldown, how many times they've skipped and continue with their request.
 
 If they try to ignore the reminder and just continue working, remind them again. They must either do it or skip it.
 
