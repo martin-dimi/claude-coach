@@ -16,13 +16,11 @@ Setup, stats and config changes all happen through conversation with Claude.
 
 ## Install
 
-### As a Claude Code plugin
-
 ```bash
-# From a marketplace (when available)
-claude plugin install coach
+# 1. Install the binary
+brew install fridge/tap/coach
 
-# Or load locally during development
+# 2. Load the plugin
 claude --plugin-dir /path/to/coach
 ```
 
@@ -32,6 +30,7 @@ claude --plugin-dir /path/to/coach
 git clone https://github.com/fridge/coach
 cd coach
 go build -o bin/coach .
+# then: claude --plugin-dir .
 ```
 
 ## Setup
