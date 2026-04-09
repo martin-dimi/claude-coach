@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -11,13 +10,6 @@ import (
 	"github.com/fridge/coach/internal/db"
 	"github.com/spf13/cobra"
 )
-
-type hookJSON struct {
-	HookSpecificOutput struct {
-		HookEventName     string `json:"hookEventName"`
-		AdditionalContext string `json:"additionalContext"`
-	} `json:"hookSpecificOutput"`
-}
 
 func newCheckCmd() *cobra.Command {
 	return &cobra.Command{
@@ -120,8 +112,8 @@ func buildReminderContext(due []config.Activity) string {
 }
 
 func emitHookContext(context string) error {
-	out := hookJSON{}
-	out.HookSpecificOutput.HookEventName = "UserPromptSubmit"
-	out.HookSpecificOutput.AdditionalContext = context
-	return json.NewEncoder(os.Stdout).Encode(out)
+	// Plain text stdout is shown as hook output in the transcript,
+	// making it more visible to Claude than JSON additionalContext.
+	_, err := fmt.Fprintln(os.Stdout, context)
+	return err
 }
