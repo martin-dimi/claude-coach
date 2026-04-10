@@ -16,15 +16,17 @@ archives:
   - formats: ["tar.gz"]
     name_template: "coach_{{ .Os }}_{{ .Arch }}"
 
-homebrew_casks:
+brews:
   - name: coach
-    binary: coach
     repository:
       owner: martin-dimi
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/martin-dimi/claude-coach
     description: Your personal wellness coach inside Claude Code
+    license: MIT
+    install: |
+      bin.install "coach"
 
 changelog:
   sort: asc
