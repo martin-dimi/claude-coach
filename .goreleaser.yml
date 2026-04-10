@@ -17,7 +17,8 @@ archives:
     name_template: "coach_{{ .Os }}_{{ .Arch }}"
 
 homebrew_casks:
-  - name: claude-coach
+  - name: coach
+    binary: coach
     repository:
       owner: martin-dimi
       name: homebrew-tap
